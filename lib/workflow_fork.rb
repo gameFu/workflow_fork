@@ -1,4 +1,5 @@
 require 'workflow_fork/version'
+require 'workflow_fork/specification'
 require 'workflow_fork/adapters/active_record'
 
 module WorkflowFork
@@ -9,6 +10,17 @@ module WorkflowFork
         @workflow_state_column_name = column_name.to_sym
       end
       @workflow_state_column_name ||= :workflow_state
+    end
+
+    # 定义状态机
+    def workflow(&specification)
+      assign_workflow Specification.new(Hash.new, &specification)
+    end
+
+    private
+
+    # 声明状态机
+    def assign_workflow(specification_object)
     end
   end
 
