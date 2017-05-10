@@ -4,6 +4,7 @@ require 'workflow_fork/adapters/active_record'
 
 module WorkflowFork
   module ClassMethods
+    attr_reader :workflow_spec
     # 定义状态机存储的字段，默认为workflow_state
     def workflow_column(column_name = nil)
       if column_name
@@ -14,13 +15,37 @@ module WorkflowFork
 
     # 定义状态机
     def workflow(&specification)
-      Specification.new(Hash.new, &specification)
+      assign_workflow Specification.new(Hash.new, &specification)
     end
 
     private
 
-    # 声明状态机
+    # 声明状态机 创建类似my_transition!这样的方法
     def assign_workflow(specification_object)
+      @workflow_spec = specification_object
+      binding.pry
+      @workflow_spec.states.values.each do |state|
+        state_name = state.name
+        # module_eval do
+        #   # 防止重名状态方法
+        #   undef_method "#{state_name}"
+        # end
+
+        state.events.flat.each do |event|
+          event_name = event.name
+          module_eval do
+            # 定义my_transition!方法
+            # define_method "#{event_name}!".to_sym do |*arg|
+            #   process_event!(event_name, *args)
+            # end
+
+            # 定义can_my_transition?方法
+            define_method "can_#{event_name}?".to_sym do |*arg|
+              
+            end
+          end
+        end
+      end
     end
   end
 
