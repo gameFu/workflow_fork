@@ -3,7 +3,7 @@ require 'workflow_fork/event_collection'
 require 'workflow_fork/errors'
 require 'workflow_fork/event'
 
-module Workflow
+module WorkflowFork
   # 状态机总规则
   class Specification
     attr_accessor :states, :initial_state, :meta
@@ -30,7 +30,7 @@ module Workflow
       # 当前声明的状态
       @scoped_state = new_state
       # 递归声明事件
-      instance_eval(&events_and_etc) if &events_and_etc
+      instance_eval(&events_and_etc) if events_and_etc
     end
 
     # 声明事件
@@ -42,7 +42,7 @@ module Workflow
         "missing ':transitions_to' in workflow event definition for '#{name}'") \
         if target.nil?
       # 事件加入状态事件集中
-      @scoped_state.events.push(name, WorkflowFork::Envent.new(name, target, condition, (args[:meta] or {}), &action))
+      @scoped_state.events.push(name, WorkflowFork::Event.new(name, target, condition, (args[:meta] or {}), &action))
     end
   end
 end

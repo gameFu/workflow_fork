@@ -14,7 +14,7 @@ module WorkflowFork
 
     # 定义状态机
     def workflow(&specification)
-      assign_workflow Specification.new(Hash.new, &specification)
+      Specification.new(Hash.new, &specification)
     end
 
     private

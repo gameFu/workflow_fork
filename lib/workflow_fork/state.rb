@@ -1,4 +1,4 @@
-module Workflow
+module WorkflowFork
   # 状态
   class State
     attr_accessor :name, :events, :meta
