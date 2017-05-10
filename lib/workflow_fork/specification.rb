@@ -1,5 +1,7 @@
-require 'workflow/state'
-require 'workflow/event_collection'
+require 'workflow_fork/state'
+require 'workflow_fork/event_collection'
+require 'workflow_fork/errors'
+require 'workflow_fork/event'
 
 module Workflow
   # 状态机总规则
@@ -25,7 +27,22 @@ module Workflow
       # 初始化状态
       @initial_state = new_state if @states.empty?
       @states[name.to_sym] = new_state
+      # 当前声明的状态
+      @scoped_state = new_state
+      # 递归声明事件
+      instance_eval(&events_and_etc) if &events_and_etc
+    end
 
+    # 声明事件
+    def event(name, args = {}, &action)
+      # 事件指向的状态
+      target = args[:transitions_to]
+      condition = args[:if]
+      raise WorkflowDefinitionError.new(
+        "missing ':transitions_to' in workflow event definition for '#{name}'") \
+        if target.nil?
+      # 事件加入状态事件集中
+      @scoped_state.events.push(name, WorkflowFork::Envent.new(name, target, condition, (args[:meta] or {}), &action))
     end
   end
 end
