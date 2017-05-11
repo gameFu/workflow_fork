@@ -34,12 +34,12 @@ module WorkflowFork
           event_name = event.name
           module_eval do
             # 定义my_transition!方法
-            # define_method "#{event_name}!".to_sym do |*arg|
-            #   process_event!(event_name, *args)
-            # end
+            define_method "#{event_name}!".to_sym do |*args|
+              process_event!(event_name, *args)
+            end
 
             # 定义can_my_transition?方法
-            define_method "can_#{event_name}?".to_sym do |*arg|
+            define_method "can_#{event_name}?".to_sym do
               # 确保不会返回nil
               return !!current_state.events.first_applicable(event_name, self)
             end
@@ -51,6 +51,27 @@ module WorkflowFork
 
   module InstanceMethods
 
+    def process_event!(name, *args)
+      event = current_state.events.first_applicable(name, self)
+      # 没有匹配的事件抛出异常
+      raise NoTransitionAllowed.new(
+        "There is no event #{name.to_sym} defined for the #{current_state} state") \
+        if event.nil?
+
+      # 检查是否存在可迁移的状态
+      check_transition(event)
+
+      # 目标迁移状态
+      to = spec.states[event.transitions_to]
+      # 如果存在复写的方法，则执行复写的方法
+      return_value = run_action_callback(event.name, *args)
+
+      # 状态更改为迁移的状态
+      transitions_value = persist_workflow_state to.to_s
+      return_value.nil? ? transitions_value : return_value
+    end
+
+    # 当前的state class
     def current_state
       # 持久化的当前状态
       loaded_state = load_workflow_state
@@ -59,6 +80,7 @@ module WorkflowFork
       res || spec.initial_state
     end
 
+    # 当前的状态机class
     def spec
       c = self.class
       # 找到引入了workflow并且workflow_spec不为空的类
@@ -75,6 +97,27 @@ module WorkflowFork
 
     def persist_workflow_state(new_value)
       @workflow_state = new_value
+    end
+
+    private
+
+    def check_transition(event)
+      raise WorkflowError.new("Event[#{event.name}]'s " +
+          "transitions_to[#{event.transitions_to}] is not a declared state.") if !spec.states[event.transitions_to]
+    end
+
+    # 是否存在复写的方法
+    def has_callback?(action)
+      action = action.to_sym
+      # 1. public方法
+      # 2. protect方法
+      # 3. 仅存在当前接收类中的私有方法
+      self.respond_to?(action) || self.class.protected_method_defined?(action)  || self.private_methods(false).map(&:to_sym).include?(action)
+    end
+
+    def run_action_callback(action_name, *args)
+      action = action_name.to_sym
+      self.send(action, *args) if has_callback?(action)
     end
   end
 
