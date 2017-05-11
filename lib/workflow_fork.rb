@@ -61,10 +61,17 @@ module WorkflowFork
       # 检查是否存在可迁移的状态
       check_transition(event)
 
+      # 迁移前状态
+      from = current_state
       # 目标迁移状态
       to = spec.states[event.transitions_to]
+
+      # before_transition callback
+      run_before_transition(from, to, name, *args)
       # 如果存在复写的方法，则执行复写的方法
       return_value = run_action_callback(event.name, *args)
+      #  on_transition callback
+      run_on_transition(from, to, name, *args)
 
       # 状态更改为迁移的状态
       transitions_value = persist_workflow_state to.to_s
@@ -104,6 +111,16 @@ module WorkflowFork
     def check_transition(event)
       raise WorkflowError.new("Event[#{event.name}]'s " +
           "transitions_to[#{event.transitions_to}] is not a declared state.") if !spec.states[event.transitions_to]
+    end
+
+    # before_transition
+    def run_before_transition(from, to, event, *args)
+      instance_exec(from.name, to.name, event, *args, &spec.before_transition_proc) if spec.before_transition_proc
+    end
+
+    # on_transition
+    def run_on_transition(from, to, event, *args)
+      instance_exec(from.name, to.name, event, *args, &spec.on_transition_proc) if spec.on_transition_proc
     end
 
     # 是否存在复写的方法

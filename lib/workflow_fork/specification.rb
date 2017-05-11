@@ -6,7 +6,7 @@ require 'workflow_fork/event'
 module WorkflowFork
   # 状态机总规则
   class Specification
-    attr_accessor :states, :initial_state, :meta
+    attr_accessor :states, :initial_state, :meta, :before_transition_proc, :on_transition_proc, :on_transition
 
     def initialize(meta = {}, &specification)
       @meta = meta
@@ -43,6 +43,14 @@ module WorkflowFork
         if target.nil?
       # 事件加入状态事件集中
       @scoped_state.events.push(name, WorkflowFork::Event.new(name, target, condition, (args[:meta] or {}), &action))
+    end
+
+    def before_transition(&proc)
+      @before_transition_proc = proc
+    end
+
+    def on_transition(&proc)
+      @on_transition_proc = proc
     end
   end
 end
