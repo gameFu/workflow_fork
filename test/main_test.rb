@@ -32,11 +32,18 @@ class TestDeclaerStateAndEventTest < ActiveRecordTestCase
       end
     end
   end
+  #
+  # test 'current state is initial_state when not assign state' do
+  #   order = Order.new
+  #   order.save
+  #   assert_equal 'pending', order.workflow_state
+  #   assert_equal 'pending', order.current_state.name.to_s
+  # end
 
-  test 'current state is initial_state when not assign state' do
+  test 'can_transition?' do
     order = Order.new
     order.save
-    assert_equal 'pending', order.workflow_state
-    assert_equal 'pending', order.current_state.name.to_s
+    assert order.can_place_order_by_user?
+    assert !order.can_confirmed_by_user?
   end
 end

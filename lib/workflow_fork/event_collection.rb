@@ -22,5 +22,12 @@ module WorkflowFork
         [:name, :transitions_to, :meta, :action].map { |method|  event.send method }
       end
     end
+
+    # 找到一个可用的event
+    def first_applicable(name, object_text)
+      (self[name] || []).detect do |event|
+        event.condition_applicatble?(object_text)  &&  event
+      end
+    end
   end
 end

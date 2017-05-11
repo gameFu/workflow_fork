@@ -1,6 +1,6 @@
 require_relative 'test_helper'
 
-class Order < ActiveRecord::Base
+class TOrder < ActiveRecord::Base
   include WorkflowFork
   workflow do
     state :pending
@@ -20,7 +20,7 @@ class TestWorkflowCloumn < ActiveRecordTestCase
   def setup
     super
     ActiveRecord::Schema.define do
-      create_table :orders do |t|
+      create_table :t_orders do |t|
         t.string :workflow_state
       end
       create_table :test_orders do |t|
@@ -30,7 +30,7 @@ class TestWorkflowCloumn < ActiveRecordTestCase
   end
 
   test 'defalut workflow column' do
-    order = Order.new
+    order = TOrder.new
     order.save
     assert_equal 'pending', order.workflow_state
   end

@@ -39,9 +39,10 @@ module WorkflowFork
             # end
 
             # 定义can_my_transition?方法
-            # define_method "can_#{event_name}?".to_sym do |*arg|
-            #
-            # end
+            define_method "can_#{event_name}?".to_sym do |*arg|
+              # 确保不会返回nil
+              return !!current_state.events.first_applicable(event_name, self)
+            end
           end
         end
       end
