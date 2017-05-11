@@ -33,8 +33,10 @@ class TestDeclaerStateAndEventTest < ActiveRecordTestCase
     end
   end
 
-  test 'declaer state' do
+  test 'current state is initial_state when not assign state' do
     order = Order.new
+    order.save
+    assert_equal 'pending', order.workflow_state
+    assert_equal 'pending', order.current_state.name.to_s
   end
-
 end

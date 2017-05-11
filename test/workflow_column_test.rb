@@ -2,11 +2,17 @@ require_relative 'test_helper'
 
 class Order < ActiveRecord::Base
   include WorkflowFork
+  workflow do
+    state :pending
+  end
 end
 
 class TestOrder < ActiveRecord::Base
   include WorkflowFork
   workflow_column :state
+  workflow do
+    state :pending
+  end
 end
 
 class TestWorkflowCloumn < ActiveRecordTestCase
@@ -26,13 +32,13 @@ class TestWorkflowCloumn < ActiveRecordTestCase
   test 'defalut workflow column' do
     order = Order.new
     order.save
-    assert_equal 'init', order.workflow_state
+    assert_equal 'pending', order.workflow_state
   end
 
   test 'custome workflow column' do
     order = TestOrder.new
     order.save
-    assert_equal 'init', order.state
+    assert_equal 'pending', order.state
     assert_equal :state, TestOrder.workflow_column
   end
 end

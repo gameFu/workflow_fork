@@ -23,7 +23,6 @@ module WorkflowFork
     # 声明状态机 创建类似my_transition!这样的方法
     def assign_workflow(specification_object)
       @workflow_spec = specification_object
-      binding.pry
       @workflow_spec.states.values.each do |state|
         state_name = state.name
         # module_eval do
@@ -40,16 +39,46 @@ module WorkflowFork
             # end
 
             # 定义can_my_transition?方法
-            define_method "can_#{event_name}?".to_sym do |*arg|
-              
-            end
+            # define_method "can_#{event_name}?".to_sym do |*arg|
+            #
+            # end
           end
         end
       end
     end
   end
 
+  module InstanceMethods
+
+    def current_state
+      # 持久化的当前状态
+      loaded_state = load_workflow_state
+      # 获取状态机
+      res = spec.states[loaded_state.to_sym] if loaded_state
+      res || spec.initial_state
+    end
+
+    def spec
+      c = self.class
+      # 找到引入了workflow并且workflow_spec不为空的类
+      until c.workflow_spec || !(c.include? WorkflowFork)
+        c = c.superclass
+      end
+      c.workflow_spec
+    end
+
+    # 继承activerecoder等adapter会被重写
+    def load_workflow_state
+      @workflow_state if instance_variable_defined? :@workflow_state
+    end
+
+    def persist_workflow_state(new_value)
+      @workflow_state = new_value
+    end
+  end
+
   def self.included(klass)
+    klass.send :include, InstanceMethods
     klass.extend ClassMethods
 
     # 配置适配器

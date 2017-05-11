@@ -21,7 +21,7 @@ module WorkflowFork
 
         # 初始化状态机状态，默认初始化为定义的第一个状态
         def write_initial_state
-          write_attribute self.class.workflow_column, 'init'
+          write_attribute self.class.workflow_column, current_state.to_s
         end
       end
     end

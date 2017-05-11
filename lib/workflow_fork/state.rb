@@ -8,5 +8,10 @@ module WorkflowFork
     def initialize(name, spec, meta = {})
       @name, @spec, @events, @meta = name, spec, EventCollection.new, meta
     end
+
+    # to_s返回状态名
+    def to_s
+      "#{name}"
+    end
   end
 end
