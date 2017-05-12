@@ -66,15 +66,20 @@ module WorkflowFork
       # 目标迁移状态
       to = spec.states[event.transitions_to]
 
-      # before_transition callback
+      # 状态迁移时间执行时执行的callback
       run_before_transition(from, to, name, *args)
       # 如果存在复写的方法，则执行复写的方法
       return_value = run_action_callback(event.name, *args)
-      #  on_transition callback
+      #  状态迁移时执行的callback
       run_on_transition(from, to, name, *args)
+      # 特定状态结束后执行的callback
+      run_on_exit(from, to, name, *args)
 
       # 状态更改为迁移的状态
       transitions_value = persist_workflow_state to.to_s
+
+      # 迁移到特定状态前执行的callback
+      run_on_entry(from, to, name, *args)
       return_value.nil? ? transitions_value : return_value
     end
 
@@ -121,6 +126,30 @@ module WorkflowFork
     # on_transition
     def run_on_transition(from, to, event, *args)
       instance_exec(from.name, to.name, event, *args, &spec.on_transition_proc) if spec.on_transition_proc
+    end
+
+    # on_exit
+    def run_on_exit(state, new_state, triggering_event, *args)
+      # 两种使用方式
+      if state
+        # 直接在state block 里定义on_exist block
+        if state.on_exit
+          instance_exec(state, new_state, triggering_event, *args, &state.on_exit)
+          # 在workflow block外定义on_(state_name)_exit method
+        else
+          hook_name = "on_#{state}_exit"
+          self.send hook_name, new_state, triggering_event, *args if has_callback?(hook_name)
+        end
+      end
+    end
+
+    def run_on_entry(state, new_state, triggering_event, *args)
+      if state.on_entry
+        instance_exec(state, new_state, triggering_event, *args, &state.on_exit)
+      else
+        hook_name = "on_#{state}_entry"
+        self.send hook_name, new_state, triggering_event, *args if has_callback?(hook_name)
+      end
     end
 
     # 是否存在复写的方法

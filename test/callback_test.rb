@@ -44,6 +44,7 @@ class OnTransitionOrder < CallbackOrder
   end
 end
 
+
 class TestCallback < ActiveRecordTestCase
   def setup
     super
@@ -69,5 +70,59 @@ class TestCallback < ActiveRecordTestCase
     order.save
     order.place_order_by_user!
     assert_equal 'on_transition', order.callback_name
+  end
+
+
+  test 'state transition exit triggering on_exit with block' do
+    c = Class.new
+    c.class_eval do
+      include WorkflowFork
+      attr_reader :histroy
+
+      def initialize
+        @histroy = []
+      end
+
+      workflow do
+        state :new do
+          event :next, transitions_to: :next_state
+        end
+        on_exit do |state, new_state, triggering_event, *args|
+          @histroy << "on_exit #{state} #{triggering_event}"
+        end
+        state :next_state
+        on_entry do |state, new_state, triggering_event, *args|
+          @histroy << "on_entry #{state} #{triggering_event}"
+        end
+      end
+    end
+    o = c.new
+    o.next!
+    # assert_equal ['on_exit new next', 'on_entry next_state next'], o.histroy
+  end
+
+  test 'state transitions exit triggering on_exit with method' do
+    c = Class.new
+    c.class_eval do
+      include  WorkflowFork
+      attr_reader :histroy
+      def initialize
+        @histroy = []
+      end
+
+      workflow do
+        state :new do
+          event :next, transitions_to: :next_state
+        end
+        state :next_state
+      end
+      def on_new_exit(new_state, triggering_event, *args)
+        @histroy << "on_exit new #{triggering_event}"
+      end
+    end
+
+    o = c.new
+    o.next!
+    assert_equal ['on_exit new next'], o.histroy
   end
 end

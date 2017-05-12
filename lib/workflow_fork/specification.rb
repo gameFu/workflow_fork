@@ -52,5 +52,13 @@ module WorkflowFork
     def on_transition(&proc)
       @on_transition_proc = proc
     end
+
+    def on_exit(&proc)
+      @scoped_state.on_exit = proc
+    end
+
+    def on_entry(&proc)
+      @scoped_state.on_entry = proc
+    end
   end
 end

@@ -1,7 +1,7 @@
 module WorkflowFork
   # 状态
   class State
-    attr_accessor :name, :events, :meta
+    attr_accessor :name, :events, :meta, :on_exit, :on_entry
     attr_reader :spec
 
     # 初始化
