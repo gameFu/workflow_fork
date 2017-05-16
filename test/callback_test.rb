@@ -90,15 +90,15 @@ class TestCallback < ActiveRecordTestCase
         on_exit do |state, new_state, triggering_event, *args|
           @histroy << "on_exit #{state} #{triggering_event}"
         end
-        state :next_state
         on_entry do |state, new_state, triggering_event, *args|
           @histroy << "on_entry #{state} #{triggering_event}"
         end
+        state :next_state
       end
     end
     o = c.new
     o.next!
-    # assert_equal ['on_exit new next', 'on_entry next_state next'], o.histroy
+    assert_equal ['on_exit new next', 'on_entry new next'], o.histroy
   end
 
   test 'state transitions exit triggering on_exit with method' do

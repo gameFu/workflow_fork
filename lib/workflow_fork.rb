@@ -72,14 +72,17 @@ module WorkflowFork
       return_value = run_action_callback(event.name, *args)
       #  状态迁移时执行的callback
       run_on_transition(from, to, name, *args)
-      # 特定状态结束后执行的callback
+      # 特定状态写入数据库前执行的callback
       run_on_exit(from, to, name, *args)
 
       # 状态更改为迁移的状态
       transitions_value = persist_workflow_state to.to_s
 
-      # 迁移到特定状态前执行的callback
+      # 特定状态写入数据库后执行的callback
       run_on_entry(from, to, name, *args)
+
+      # 状态迁移后执行的callback
+
       return_value.nil? ? transitions_value : return_value
     end
 
@@ -145,7 +148,7 @@ module WorkflowFork
 
     def run_on_entry(state, new_state, triggering_event, *args)
       if state.on_entry
-        instance_exec(state, new_state, triggering_event, *args, &state.on_exit)
+        instance_exec(state, new_state, triggering_event, *args, &state.on_entry)
       else
         hook_name = "on_#{state}_entry"
         self.send hook_name, new_state, triggering_event, *args if has_callback?(hook_name)
