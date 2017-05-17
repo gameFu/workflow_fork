@@ -44,6 +44,32 @@ class OnTransitionOrder < CallbackOrder
   end
 end
 
+class AfterTransitionOrder < CallbackOrder
+  workflow do
+    state :pending do
+      # 用户下单
+      event :place_order_by_user, transitions_to: :pre_generated
+    end
+    # 预生成订单
+    state :pre_generated do
+      # 用户确认下单
+      event :confirmed_by_user, transitions_to: :wait_payment
+    end
+    before_transition do
+      self.callback_name = 'before_transition'
+      save!
+    end
+    on_transition do
+      self.callback_name = 'on_transition'
+      save!
+    end
+    after_transition do
+      self.callback_name = 'after_transition'
+      save!
+    end
+  end
+end
+
 
 class TestCallback < ActiveRecordTestCase
   def setup
@@ -70,6 +96,13 @@ class TestCallback < ActiveRecordTestCase
     order.save
     order.place_order_by_user!
     assert_equal 'on_transition', order.callback_name
+  end
+
+  test 'after_transition' do
+    order = AfterTransitionOrder.new
+    order.save
+    order.place_order_by_user!
+    assert_equal 'after_transition', order.callback_name
   end
 
 
@@ -119,10 +152,13 @@ class TestCallback < ActiveRecordTestCase
       def on_new_exit(new_state, triggering_event, *args)
         @histroy << "on_exit new #{triggering_event}"
       end
+      def on_new_entry(new_state, triggering_event, *args)
+        @histroy << "on_entry new #{triggering_event}"
+      end
     end
 
     o = c.new
     o.next!
-    assert_equal ['on_exit new next'], o.histroy
+    assert_equal ['on_exit new next', 'on_entry new next'], o.histroy
   end
 end

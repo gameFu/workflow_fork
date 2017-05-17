@@ -82,7 +82,7 @@ module WorkflowFork
       run_on_entry(from, to, name, *args)
 
       # 状态迁移后执行的callback
-
+      run_after_transition(from, to, name, *args)
       return_value.nil? ? transitions_value : return_value
     end
 
@@ -124,6 +124,10 @@ module WorkflowFork
     # before_transition
     def run_before_transition(from, to, event, *args)
       instance_exec(from.name, to.name, event, *args, &spec.before_transition_proc) if spec.before_transition_proc
+    end
+
+    def run_after_transition(from, to, event, *args)
+      instance_exec(from.name, to.name, event, *args, &spec.after_transition_proc) if spec.after_transition_proc
     end
 
     # on_transition
