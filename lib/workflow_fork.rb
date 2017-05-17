@@ -58,6 +58,10 @@ module WorkflowFork
         "There is no event #{name.to_sym} defined for the #{current_state} state") \
         if event.nil?
 
+      # 初始化自定义中断方法变量
+      @halted_because = nil
+      @halted = false
+
       # 检查是否存在可迁移的状态
       check_transition(event)
 
@@ -68,6 +72,8 @@ module WorkflowFork
 
       # 状态迁移时间执行时执行的callback
       run_before_transition(from, to, name, *args)
+      return false if @halted
+
       # 如果存在复写的方法，则执行复写的方法
       begin
         return_value = run_action_callback(event.name, *args)
@@ -75,6 +81,7 @@ module WorkflowFork
         # 错误处理
         run_on_error(e, from, to, name, *args)
       end
+      return false if @halted
       #  状态迁移时执行的callback
       run_on_transition(from, to, name, *args)
       # 特定状态写入数据库前执行的callback
@@ -117,6 +124,19 @@ module WorkflowFork
 
     def persist_workflow_state(new_value)
       @workflow_state = new_value
+    end
+
+    # 在状态变更前通过设置该方法阻止状态变更持久化
+    def halt(reason = nil)
+      @halted_because = reason
+      @halted = true
+    end
+
+    # 在状态变更前出发该方法，将会中断状态变更并抛出异常
+    def halt!(reason = nil)
+      @halted_because = reason
+      @halted = true
+      raise TransitionHalted.new(reason)
     end
 
     private

@@ -33,7 +33,7 @@ class TestErrorStateOrder < ActiveRecord::Base
 end
 
 class OverwriteOrder < Order
-  def place_order_by_user!
+  def place_order_by_user
     self.paid = true
     save!
   end
@@ -100,5 +100,6 @@ class TestDeclaerStateAndEventTest < ActiveRecordTestCase
     assert !order.paid
     order.place_order_by_user!
     assert order.reload.paid
+    assert_equal 'pre_generated', order.workflow_state
   end
 end
