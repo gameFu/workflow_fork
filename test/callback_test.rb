@@ -1,5 +1,7 @@
 require_relative 'test_helper'
 
+class TestError < StandardError; end
+class TestHandleError < StandardError; end
 class CallbackOrder < ActiveRecord::Base
   include WorkflowFork
 end
@@ -160,5 +162,48 @@ class TestCallback < ActiveRecordTestCase
     o = c.new
     o.next!
     assert_equal ['on_exit new next', 'on_entry new next'], o.histroy
+  end
+
+  test 'on_error witout custome error handle' do
+    c = Class.new
+    c.class_eval do
+      include WorkflowFork
+      workflow do
+        state :new do
+          event :next, transitions_to: :next_state
+        end
+        state :next_state
+      end
+      def next!
+        raise TestError
+      end
+    end
+    o = c.new
+    assert_raises 'TestError' do
+      o.next!
+    end
+  end
+
+  test 'on_error with custome error handle' do
+    c = Class.new
+    c.class_eval do
+      include WorkflowFork
+      workflow do
+        state :new do
+          event :next, transitions_to: :next_state
+        end
+        state :next_state
+        on_error do |error, from, to, event, *args|
+          raise TestHandleError
+        end
+      end
+      def next!
+        raise TestError
+      end
+    end
+    o = c.new
+    assert_raises 'TestHandleError' do
+      o.next!
+    end
   end
 end

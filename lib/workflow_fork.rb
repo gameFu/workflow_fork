@@ -69,7 +69,12 @@ module WorkflowFork
       # 状态迁移时间执行时执行的callback
       run_before_transition(from, to, name, *args)
       # 如果存在复写的方法，则执行复写的方法
-      return_value = run_action_callback(event.name, *args)
+      begin
+        return_value = run_action_callback(event.name, *args)
+      rescue StandardError => e
+        # 错误处理
+        run_on_error(e, from, to, name, *args)
+      end
       #  状态迁移时执行的callback
       run_on_transition(from, to, name, *args)
       # 特定状态写入数据库前执行的callback
@@ -128,6 +133,15 @@ module WorkflowFork
 
     def run_after_transition(from, to, event, *args)
       instance_exec(from.name, to.name, event, *args, &spec.after_transition_proc) if spec.after_transition_proc
+    end
+
+    def run_on_error(error, from, to, event, *args)
+      # 如果自定义了错误处理方法则使用自定义方法来处理否则直接将异常抛出
+      if spec.on_error_proc
+        instance_exec(error, from.name, to.name, event, *args, &spec.on_error_proc)
+      else
+        raise error
+      end
     end
 
     # on_transition
