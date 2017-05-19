@@ -22,13 +22,36 @@ module WorkflowFork
 
     # 声明状态机 创建类似my_transition!这样的方法
     def assign_workflow(specification_object)
+
+      # 处理如果父类定义了workflow状态机的情况
+      if respond_to? :inherited_workflow_spec
+        # 单表定义完全自动完美融合，所以必须只能让一个状态机，这里使后定义的状态机（子类）优先
+        # 将parent定义的状态机方法全部移除
+        inherited_workflow_spec.states.values.each do |state|
+          state_name = state.name
+          module_eval do
+            undef_method "#{state_name}?"
+          end
+
+          state.events.flat.each do |event|
+            event_name = event.name
+            module_eval do
+              undef_method "#{event_name}!".to_sym
+              undef_method "can_#{event_name}?"
+            end
+          end
+        end
+      end
+
       @workflow_spec = specification_object
       @workflow_spec.states.values.each do |state|
         state_name = state.name
-        # module_eval do
-        #   # 防止重名状态方法
-        #   undef_method "#{state_name}"
-        # end
+        module_eval do
+          # 防止重名状态方法
+          define_method "#{state_name}?" do
+            state_name == current_state.name
+          end
+        end
 
         state.events.flat.each do |event|
           event_name = event.name
@@ -210,6 +233,19 @@ module WorkflowFork
 
   def self.included(klass)
     klass.send :include, InstanceMethods
+
+    # 实现sti(单表继承)时，将parent定义的状态机，直接定义到子类中
+
+    # 如果父类定义了workflow
+    if klass.superclass.respond_to?(:workflow_spec, true)
+      # 定义inherited_workflow_spec方法，用来保存父类定义的workflow
+      pro = Proc.new { klass.superclass.workflow_spec }
+      singleton_class = class << self; self; end
+      singleton_class.send(:define_method, :inherited_workflow_spec) do
+        pro.call
+      end
+    end
+
     klass.extend ClassMethods
 
     # 配置适配器
